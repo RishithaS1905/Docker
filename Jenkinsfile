@@ -2,32 +2,33 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "4vv23is260/myapp"
+        // Define variables to use throughout the pipeline
+        DOCKER_IMAGE = "myapp"
+        DOCKER_HUB_USER = "rishithas1905" // Replace with your actual Docker Hub username
     }
 
-   stage('Clone Repository') {
-    steps {
-        // Change 'master' to 'main' here
-        git branch: 'main', url: 'https://github.com/RishithaS1905/Docker.git'
-    }
-}
+    stages {
+        stage('Checkout') {
+            steps {
+                // This clones the 'main' branch of your repo
+                git branch: 'main', url: 'https://github.com/RishithaS1905/Docker.git'
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("${DOCKER_IMAGE}:latest")
+                    // Building the image using the local Dockerfile
+                    sh "docker build -t ${DOCKER_IMAGE} ."
                 }
             }
         }
 
         stage('Login to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                // Ensure you have a 'docker-hub-credentials' ID set up in Jenkins Credentials
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+                    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin"
                 }
             }
         }
@@ -35,9 +36,9 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('', 'dockerhub-creds') {
-                        docker.image("${DOCKER_IMAGE}:latest").push()
-                    }
+                    // Tag and push to Docker Hub
+                    sh "docker tag ${DOCKER_IMAGE} ${DOCKER_HUB_USER}/${DOCKER_IMAGE}:latest"
+                    sh "docker push ${DOCKER_HUB_USER}/${DOCKER_IMAGE}:latest"
                 }
             }
         }
@@ -45,10 +46,10 @@ pipeline {
 
     post {
         success {
-            echo 'Image successfully built and pushed to Docker Hub'
+            echo "Pipeline finished successfully! Image ${DOCKER_IMAGE} pushed."
         }
         failure {
-            echo 'Pipeline failed'
+            echo "Pipeline failed. Check the console output for errors."
         }
     }
 }
