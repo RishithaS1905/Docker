@@ -5,13 +5,12 @@ pipeline {
         DOCKER_IMAGE = "4vv23is260/myapp"
     }
 
-    stages {
-
-        stage('Clone Repository') {
-            steps {
-                git 'https://github.com/RishithaS1905/Docker.git'
-            }
-        }
+   stage('Clone Repository') {
+    steps {
+        // Change 'master' to 'main' here
+        git branch: 'main', url: 'https://github.com/RishithaS1905/Docker.git'
+    }
+}
 
         stage('Build Docker Image') {
             steps {
